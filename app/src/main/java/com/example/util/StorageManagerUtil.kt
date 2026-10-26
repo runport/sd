@@ -25,9 +25,6 @@ import java.util.Locale
 
 object StorageManagerUtil {
 
-    /**
-     * Convert digits to Persian digits for natural readability
-     */
     fun toPersianDigits(text: String): String {
         val persianDigits = charArrayOf('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹')
         val sb = StringBuilder()
@@ -41,9 +38,6 @@ object StorageManagerUtil {
         return sb.toString()
     }
 
-    /**
-     * Formats bytes to Persian readable string (e.g., ۱.۵ گیگابایت or ۴۵۰ مگابایت)
-     */
     fun formatBytes(bytes: Long): String {
         if (bytes <= 0) return "۰ بایت"
         val kb = 1024.0
@@ -74,9 +68,10 @@ object StorageManagerUtil {
 
             val total = totalBlocks * blockSize
             val free = availableBlocks * blockSize
-            val used = total - free
-            val percent = if (total > 0) ((used * 100) / total).toInt() else 0
+            val used = (total - free).coerceAtLeast(0L)
+            val percent = if (total > 0) ((used * 100) / total).toInt().coerceIn(0, 100) else 0
 
+            AppLog.i("StorageManagerUtil", "Internal storage query OK: total=$total, free=$free, path=${path.path}")
             StorageSpaceInfo(
                 title = "حافظه داخلی دستگاه",
                 totalBytes = total,
@@ -87,57 +82,67 @@ object StorageManagerUtil {
                 path = path.absolutePath,
                 isRemovable = false
             )
-        } catch (e: Exception) {
-            StorageSpaceInfo(
-                title = "حافظه داخلی دستگاه",
-                totalBytes = 0L,
-                freeBytes = 0L,
-                usedBytes = 0L,
-                percentageUsed = 0,
-                isMounted = false,
-                path = "نامشخص",
-                isRemovable = false
-            )
+        } catch (t: Throwable) {
+            AppLog.e("StorageManagerUtil", "Failed to query internal storage", t)
+            StorageSpaceInfo.EMPTY_INTERNAL
         }
     }
 
     /**
-     * Get SD Card (microSD / secondary external storage) info
+     * Get SD Card (microSD / secondary external storage) info with defensive handling for Android 5.1.1
      */
     fun getSdCardStorageInfo(context: Context): StorageSpaceInfo {
         try {
-            // ContextCompat.getExternalFilesDirs returns internal external at index 0
-            // and physical MicroSD card dirs at index 1+ if present.
-            val externalDirs = ContextCompat.getExternalFilesDirs(context, null)
+            // Check ContextCompat.getExternalFilesDirs
+            val externalDirs = try {
+                ContextCompat.getExternalFilesDirs(context, null)
+            } catch (t: Throwable) {
+                AppLog.w("StorageManagerUtil", "getExternalFilesDirs failed", t)
+                emptyArray<File?>()
+            }
+
             for (i in externalDirs.indices) {
                 val dir = externalDirs[i] ?: continue
-                if (Environment.isExternalStorageRemovable(dir) || i > 0) {
-                    val stat = StatFs(dir.path)
-                    val blockSize = stat.blockSizeLong
-                    val totalBlocks = stat.blockCountLong
-                    val availableBlocks = stat.availableBlocksLong
-
-                    val total = totalBlocks * blockSize
-                    val free = availableBlocks * blockSize
-                    val used = total - free
-                    val percent = if (total > 0) ((used * 100) / total).toInt() else 0
-
-                    if (total > 0) {
-                        return StorageSpaceInfo(
-                            title = "کارت حافظه جانبی (MicroSD)",
-                            totalBytes = total,
-                            freeBytes = free,
-                            usedBytes = used,
-                            percentageUsed = percent,
-                            isMounted = true,
-                            path = dir.absolutePath,
-                            isRemovable = true
-                        )
+                try {
+                    val isRemovable = try {
+                        Environment.isExternalStorageRemovable(dir)
+                    } catch (t: Throwable) {
+                        i > 0
                     }
+
+                    if (isRemovable || i > 0) {
+                        if (dir.exists() && dir.canRead()) {
+                            val stat = StatFs(dir.path)
+                            val blockSize = stat.blockSizeLong
+                            val totalBlocks = stat.blockCountLong
+                            val availableBlocks = stat.availableBlocksLong
+
+                            val total = totalBlocks * blockSize
+                            val free = availableBlocks * blockSize
+                            val used = (total - free).coerceAtLeast(0L)
+                            val percent = if (total > 0) ((used * 100) / total).toInt().coerceIn(0, 100) else 0
+
+                            if (total > 0) {
+                                AppLog.i("StorageManagerUtil", "SD card detected via getExternalFilesDirs[$i]: ${dir.absolutePath}")
+                                return StorageSpaceInfo(
+                                    title = "کارت حافظه جانبی (MicroSD)",
+                                    totalBytes = total,
+                                    freeBytes = free,
+                                    usedBytes = used,
+                                    percentageUsed = percent,
+                                    isMounted = true,
+                                    path = dir.absolutePath,
+                                    isRemovable = true
+                                )
+                            }
+                        }
+                    }
+                } catch (t: Throwable) {
+                    AppLog.w("StorageManagerUtil", "Error inspecting external dir at index $i", t)
                 }
             }
 
-            // Fallback check: check secondary mount points common in Android 5 (Lollipop TouchWiz)
+            // Fallback check: check secondary mount points common in Android 5 (Lollipop TouchWiz on J1)
             val secondaryPaths = arrayOf(
                 "/storage/extSdCard",
                 "/storage/sdcard1",
@@ -146,41 +151,39 @@ object StorageManagerUtil {
                 "/storage/MicroSD"
             )
             for (p in secondaryPaths) {
-                val file = File(p)
-                if (file.exists() && file.canRead()) {
-                    val stat = StatFs(file.path)
-                    val blockSize = stat.blockSizeLong
-                    val total = stat.blockCountLong * blockSize
-                    val free = stat.availableBlocksLong * blockSize
-                    val used = total - free
-                    if (total > 0) {
-                        val percent = ((used * 100) / total).toInt()
-                        return StorageSpaceInfo(
-                            title = "کارت حافظه جانبی (MicroSD)",
-                            totalBytes = total,
-                            freeBytes = free,
-                            usedBytes = used,
-                            percentageUsed = percent,
-                            isMounted = true,
-                            path = file.absolutePath,
-                            isRemovable = true
-                        )
+                try {
+                    val file = File(p)
+                    if (file.exists() && file.canRead()) {
+                        val stat = StatFs(file.path)
+                        val blockSize = stat.blockSizeLong
+                        val total = stat.blockCountLong * blockSize
+                        val free = stat.availableBlocksLong * blockSize
+                        val used = (total - free).coerceAtLeast(0L)
+                        if (total > 0) {
+                            val percent = ((used * 100) / total).toInt().coerceIn(0, 100)
+                            AppLog.i("StorageManagerUtil", "SD card detected at legacy path $p")
+                            return StorageSpaceInfo(
+                                title = "کارت حافظه جانبی (MicroSD)",
+                                totalBytes = total,
+                                freeBytes = free,
+                                usedBytes = used,
+                                percentageUsed = percent,
+                                isMounted = true,
+                                path = file.absolutePath,
+                                isRemovable = true
+                            )
+                        }
                     }
+                } catch (t: Throwable) {
+                    AppLog.w("StorageManagerUtil", "Error probing mount path $p", t)
                 }
             }
-        } catch (_: Exception) {
+        } catch (t: Throwable) {
+            AppLog.e("StorageManagerUtil", "Unexpected error in getSdCardStorageInfo", t)
         }
 
-        return StorageSpaceInfo(
-            title = "کارت حافظه جانبی (MicroSD)",
-            totalBytes = 0L,
-            freeBytes = 0L,
-            usedBytes = 0L,
-            percentageUsed = 0,
-            isMounted = false,
-            path = "شناسایی نشد",
-            isRemovable = true
-        )
+        AppLog.i("StorageManagerUtil", "No secondary SD card detected or mounted")
+        return StorageSpaceInfo.EMPTY_SD
     }
 
     /**
@@ -194,90 +197,86 @@ object StorageManagerUtil {
 
             val total = memInfo.totalMem
             val free = memInfo.availMem
-            val used = total - free
-            val percent = if (total > 0) ((used * 100) / total).toInt() else 0
+            val used = (total - free).coerceAtLeast(0L)
+            val percent = if (total > 0) ((used * 100) / total).toInt().coerceIn(0, 100) else 0
 
+            AppLog.i("StorageManagerUtil", "RAM query OK: total=$total, free=$free, percent=$percent")
             RamInfo(
                 totalBytes = total,
                 freeBytes = free,
                 usedBytes = used,
                 percentageUsed = percent
             )
-        } catch (e: Exception) {
-            RamInfo(0L, 0L, 0L, 0)
+        } catch (t: Throwable) {
+            AppLog.e("StorageManagerUtil", "Failed to query RAM info", t)
+            RamInfo.EMPTY
         }
     }
 
     /**
-     * Scan installed packages and classify movable status for Android 5.0+
+     * Scan installed packages and classify movable status for Android 5.0+.
+     * Note: Avoids pre-loading all Bitmaps/Drawables to prevent OOM on 512MB RAM devices.
      */
     suspend fun getInstalledApps(context: Context): List<AppStorageInfo> = withContext(Dispatchers.IO) {
+        AppLog.i("StorageManagerUtil", "Starting getInstalledApps scan")
         val pm = context.packageManager
         val packages: List<PackageInfo> = try {
             pm.getInstalledPackages(PackageManager.GET_META_DATA)
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
+            AppLog.e("StorageManagerUtil", "Failed to query installed packages", t)
             emptyList()
         }
 
         val result = mutableListOf<AppStorageInfo>()
 
         for (pkg in packages) {
-            val appInfo = pkg.applicationInfo ?: continue
-            val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-            val isOnSd = (appInfo.flags and ApplicationInfo.FLAG_EXTERNAL_STORAGE) != 0
+            try {
+                val appInfo = pkg.applicationInfo ?: continue
+                val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                val isOnSd = (appInfo.flags and ApplicationInfo.FLAG_EXTERNAL_STORAGE) != 0
 
-            // installLocation constants:
-            // 0 = INSTALL_LOCATION_AUTO
-            // 1 = INSTALL_LOCATION_INTERNAL_ONLY
-            // 2 = INSTALL_LOCATION_PREFER_EXTERNAL
-            val location = pkg.installLocation
+                val location = pkg.installLocation
 
-            // On Android 5.0 (Lollipop), non-system apps with location != 1 can be moved to SD.
-            // Even if location is AUTO or unset, Samsung Galaxy J1's TouchWiz allows moving if not internal-only.
-            val canMove = if (isSystem) {
-                false
-            } else if (isOnSd) {
-                true // already movable and moved
-            } else {
-                location == PackageInfo.INSTALL_LOCATION_PREFER_EXTERNAL ||
-                        location == PackageInfo.INSTALL_LOCATION_AUTO ||
-                        location == 0 // Default unspecified in many legacy apps allows move in Android 5
-            }
+                val canMove = if (isSystem) {
+                    false
+                } else if (isOnSd) {
+                    true
+                } else {
+                    location == PackageInfo.INSTALL_LOCATION_PREFER_EXTERNAL ||
+                            location == PackageInfo.INSTALL_LOCATION_AUTO ||
+                            location == 0
+                }
 
-            val appName = try {
-                appInfo.loadLabel(pm).toString()
-            } catch (e: Exception) {
-                pkg.packageName
-            }
+                val appName = try {
+                    appInfo.loadLabel(pm).toString()
+                } catch (t: Throwable) {
+                    pkg.packageName
+                }
 
-            val icon = try {
-                appInfo.loadIcon(pm)
-            } catch (e: Exception) {
-                null
-            }
+                val apkSize = try {
+                    File(appInfo.sourceDir).length()
+                } catch (t: Throwable) {
+                    0L
+                }
 
-            val apkSize = try {
-                File(appInfo.sourceDir).length()
-            } catch (e: Exception) {
-                0L
-            }
-
-            result.add(
-                AppStorageInfo(
-                    packageName = pkg.packageName,
-                    appName = appName,
-                    icon = icon,
-                    isSystemApp = isSystem,
-                    isInstalledOnSd = isOnSd,
-                    canBeMovedToSd = canMove,
-                    installLocation = location,
-                    apkSizeBytes = apkSize,
-                    versionName = pkg.versionName ?: "1.0"
+                result.add(
+                    AppStorageInfo(
+                        packageName = pkg.packageName,
+                        appName = appName,
+                        isSystemApp = isSystem,
+                        isInstalledOnSd = isOnSd,
+                        canBeMovedToSd = canMove,
+                        installLocation = location,
+                        apkSizeBytes = apkSize,
+                        versionName = pkg.versionName ?: "1.0"
+                    )
                 )
-            )
+            } catch (t: Throwable) {
+                AppLog.w("StorageManagerUtil", "Error parsing package info for ${pkg.packageName}", t)
+            }
         }
 
-        // Sort: movable apps first, then user apps, then largest size
+        AppLog.i("StorageManagerUtil", "Finished scan: ${result.size} packages enumerated successfully")
         result.sortedWith(
             compareByDescending<AppStorageInfo> { it.canBeMovedToSd && !it.isInstalledOnSd }
                 .thenByDescending { !it.isSystemApp }
@@ -285,51 +284,49 @@ object StorageManagerUtil {
         )
     }
 
-    /**
-     * Opens the native Application Details screen (Samsung Application Manager)
-     * where the "Move to SD Card" (انتقال به کارت SD) button is hosted.
-     */
     fun openAppDetailsSettings(context: Context, packageName: String) {
+        AppLog.i("StorageManagerUtil", "Opening app details for $packageName")
         try {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                 data = Uri.parse("package:$packageName")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
-        } catch (e: Exception) {
-            // Fallback to manage applications
+        } catch (t: Throwable) {
+            AppLog.w("StorageManagerUtil", "ACTION_APPLICATION_DETAILS_SETTINGS failed, trying fallback", t)
             try {
                 val intent = Intent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)
-            } catch (_: Exception) {}
+            } catch (t2: Throwable) {
+                AppLog.e("StorageManagerUtil", "Failed to open application settings", t2)
+            }
         }
     }
 
-    /**
-     * Opens the system storage settings screen
-     */
     fun openStorageSettings(context: Context) {
+        AppLog.i("StorageManagerUtil", "Opening system storage settings")
         try {
             val intent = Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
+            AppLog.w("StorageManagerUtil", "ACTION_INTERNAL_STORAGE_SETTINGS failed, opening settings root", t)
             try {
                 val fallback = Intent(Settings.ACTION_SETTINGS).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(fallback)
-            } catch (_: Exception) {}
+            } catch (t2: Throwable) {
+                AppLog.e("StorageManagerUtil", "Failed to open settings", t2)
+            }
         }
     }
 
-    /**
-     * Scans junk files (cache, temp files, large files > 20MB)
-     */
     suspend fun scanJunkAndFiles(context: Context): JunkScanResult = withContext(Dispatchers.IO) {
+        AppLog.i("StorageManagerUtil", "Starting scanJunkAndFiles")
         var cacheBytes = 0L
         var tempBytes = 0L
         var emptyFolders = 0
@@ -338,7 +335,6 @@ object StorageManagerUtil {
         val duplicates = mutableListOf<StorageFileItem>()
 
         try {
-            // 1. App's internal & external cache directories
             context.cacheDir?.let { cDir ->
                 cacheBytes += getDirectorySize(cDir)
             }
@@ -346,7 +342,6 @@ object StorageManagerUtil {
                 cacheBytes += getDirectorySize(ecDir)
             }
 
-            // 2. Scan public storage for temp, logs, backups, and large files
             val storageDirs = mutableListOf<File>()
             Environment.getExternalStorageDirectory()?.let { storageDirs.add(it) }
 
@@ -365,7 +360,9 @@ object StorageManagerUtil {
                     if (dir != null && dir.exists()) {
                         storageDirs.add(dir)
                     }
-                } catch (_: Exception) {}
+                } catch (t: Throwable) {
+                    AppLog.w("StorageManagerUtil", "Could not access public dir: $dirName", t)
+                }
             }
 
             val visitedPaths = mutableSetOf<String>()
@@ -381,14 +378,12 @@ object StorageManagerUtil {
                         val length = file.length()
                         val name = file.name.lowercase(Locale.ROOT)
 
-                        // Check temp / junk files
                         if (name.endsWith(".tmp") || name.endsWith(".log") || name.endsWith(".bak") ||
                             name.startsWith(".thumb") || name.endsWith(".temp") || name.endsWith(".apk")
                         ) {
                             tempBytes += length
                         }
 
-                        // Check large files (> 20 MB = 20 * 1024 * 1024)
                         if (length >= 20 * 1024 * 1024) {
                             val item = StorageFileItem(
                                 name = file.name,
@@ -400,7 +395,6 @@ object StorageManagerUtil {
                             largeFilesList.add(item)
                         }
 
-                        // Detect duplicate candidate (same name and size > 1MB)
                         if (length > 1024 * 1024) {
                             val sig = "${file.name}_$length"
                             if (filesBySignature.containsKey(sig)) {
@@ -432,11 +426,13 @@ object StorageManagerUtil {
                     }
                 )
             }
-        } catch (_: Exception) {}
+        } catch (t: Throwable) {
+            AppLog.e("StorageManagerUtil", "Error scanning junk and files", t)
+        }
 
-        // Sort large files descending
         largeFilesList.sortByDescending { it.sizeBytes }
 
+        AppLog.i("StorageManagerUtil", "scanJunkAndFiles finished: cache=$cacheBytes, temp=$tempBytes, large=${largeFilesList.size}")
         JunkScanResult(
             cacheBytes = cacheBytes,
             tempFilesBytes = tempBytes,
@@ -465,7 +461,6 @@ object StorageManagerUtil {
 
         for (f in files) {
             if (f.isDirectory) {
-                // Skip system and hidden heavy app folders that shouldn't be touched
                 if (!f.name.startsWith(".") || f.name.equals(".thumbnails", ignoreCase = true)) {
                     scanDirectoryRecursive(f, visited, maxDepth, currentDepth + 1, onFileFound, onEmptyFolderFound)
                 }
@@ -475,13 +470,10 @@ object StorageManagerUtil {
         }
     }
 
-    /**
-     * Cleans temporary files and accessible cache
-     */
     suspend fun cleanCacheAndTempFiles(context: Context): Long = withContext(Dispatchers.IO) {
+        AppLog.i("StorageManagerUtil", "cleanCacheAndTempFiles invoked")
         var bytesCleaned = 0L
 
-        // Clean app cache
         context.cacheDir?.let { dir ->
             bytesCleaned += deleteDirectoryContents(dir)
         }
@@ -489,7 +481,6 @@ object StorageManagerUtil {
             bytesCleaned += deleteDirectoryContents(dir)
         }
 
-        // Clean temp files in public Downloads directory
         try {
             val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             if (downloads != null && downloads.exists()) {
@@ -506,8 +497,11 @@ object StorageManagerUtil {
                     }
                 }
             }
-        } catch (_: Exception) {}
+        } catch (t: Throwable) {
+            AppLog.w("StorageManagerUtil", "Error cleaning temporary downloads", t)
+        }
 
+        AppLog.i("StorageManagerUtil", "cleanCacheAndTempFiles completed: freed $bytesCleaned bytes")
         bytesCleaned
     }
 

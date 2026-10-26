@@ -38,12 +38,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.AppStorageInfo
+import com.example.util.AppIconLoader
 import com.example.util.StorageManagerUtil
 
 @Composable
@@ -52,8 +54,9 @@ fun AppItemCard(
     onMoveClick: (AppStorageInfo) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val imageBitmap = remember(app.packageName) {
-        drawableToImageBitmap(app.icon)
+        AppIconLoader.loadIcon(context, app.packageName)
     }
 
     Card(
@@ -228,20 +231,5 @@ fun AppItemCard(
                 }
             }
         }
-    }
-}
-
-private fun drawableToImageBitmap(drawable: Drawable?): ImageBitmap? {
-    if (drawable == null) return null
-    return try {
-        val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 96
-        val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 96
-        val bitmap = Bitmap.createBitmap(width.coerceAtMost(192), height.coerceAtMost(192), Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
-        bitmap.asImageBitmap()
-    } catch (e: Exception) {
-        null
     }
 }

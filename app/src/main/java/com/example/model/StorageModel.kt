@@ -1,7 +1,5 @@
 package com.example.model
 
-import android.graphics.drawable.Drawable
-
 data class StorageSpaceInfo(
     val title: String,
     val totalBytes: Long,
@@ -11,19 +9,50 @@ data class StorageSpaceInfo(
     val isMounted: Boolean,
     val path: String,
     val isRemovable: Boolean = false
-)
+) {
+    companion object {
+        val EMPTY_INTERNAL = StorageSpaceInfo(
+            title = "حافظه داخلی دستگاه",
+            totalBytes = 0L,
+            freeBytes = 0L,
+            usedBytes = 0L,
+            percentageUsed = 0,
+            isMounted = true,
+            path = "در حال بارگذاری…",
+            isRemovable = false
+        )
+
+        val EMPTY_SD = StorageSpaceInfo(
+            title = "کارت حافظه جانبی (MicroSD)",
+            totalBytes = 0L,
+            freeBytes = 0L,
+            usedBytes = 0L,
+            percentageUsed = 0,
+            isMounted = false,
+            path = "در حال بررسی…",
+            isRemovable = true
+        )
+    }
+}
 
 data class RamInfo(
     val totalBytes: Long,
     val freeBytes: Long,
     val usedBytes: Long,
     val percentageUsed: Int
-)
+) {
+    companion object {
+        val EMPTY = RamInfo(0L, 0L, 0L, 0)
+    }
+}
 
+/**
+ * Lightweight application model. Note: Does not hold large android.graphics.drawable.Drawable
+ * objects in memory to prevent OutOfMemoryError crashes on devices with <= 768MB RAM (e.g. Galaxy J1).
+ */
 data class AppStorageInfo(
     val packageName: String,
     val appName: String,
-    val icon: Drawable?,
     val isSystemApp: Boolean,
     val isInstalledOnSd: Boolean,
     val canBeMovedToSd: Boolean,

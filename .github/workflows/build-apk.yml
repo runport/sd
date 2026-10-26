@@ -5,11 +5,11 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch: # امکان اجرای دستی ورک‌فلو با یک کلیک از تب Actions
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build & Package APK
+    name: Build, Test & Package APK
     runs-on: ubuntu-latest
 
     steps:
@@ -27,19 +27,19 @@ jobs:
 
       - name: 4. Prepare Environment & Keystore
         run: |
-          # ۱. اطمینان از وجود فایل .env برای پلاگین Secrets
+          # Ensure .env exists for Secrets Gradle plugin
           if [ ! -f .env ]; then
             cp .env.example .env || touch .env
           fi
 
-          # ۲. بازگردانی کلید دیباگ از base64 در صورت وجود فایل
+          # Decode base64 debug keystore if present
           if [ -f debug.keystore.base64 ] && [ ! -f debug.keystore ]; then
             base64 -d debug.keystore.base64 > debug.keystore || true
           fi
 
-          # ۳. در صورتی که فایل کلید در گیت وجود نداشت، کلید استاندارد دیباگ با keytool ساخته می‌شود
+          # Auto-generate standard debug keystore if missing
           if [ ! -s debug.keystore ]; then
-            echo "debug.keystore not found. Generating a valid debug keystore with keytool..."
+            echo "Generating debug.keystore with keytool..."
             keytool -genkeypair \
               -alias androiddebugkey \
               -keypass android \
@@ -51,28 +51,30 @@ jobs:
               -validity 10000
           fi
 
-          # بررسی وضعیت نهایی فایل کلید
-          echo "debug.keystore verification:"
           ls -lh debug.keystore
-
-          # ۴. دسترسی اجرایی به اسکریپت gradlew
           chmod +x gradlew
 
-      - name: 5. Build Debug APK
+      - name: 5. Run Unit Tests
+        run: ./gradlew testDebugUnitTest --stacktrace
+
+      - name: 6. Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: 6. Find & Rename APK for Easy Download
+      - name: 7. Verify APK and Prepare Download
         run: |
           mkdir -p output_apk
-          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp app/build/outputs/apk/debug/app-debug.apk output_apk/SD_Storage_Manager_J1.apk
-          else
-            find app/build/outputs/apk/ -name "*.apk" -exec cp {} output_apk/SD_Storage_Manager_J1.apk \;
+          APK_FILE="app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -f "$APK_FILE" ]; then
+            echo "ERROR: Expected APK $APK_FILE was not found!"
+            find app/build/outputs/ -type f || true
+            exit 1
           fi
-          echo "APK successfully generated and copied to output_apk directory:"
-          ls -lh output_apk/
 
-      - name: 7. Upload APK as Artifact
+          cp "$APK_FILE" output_apk/SD_Storage_Manager_J1.apk
+          echo "=== APK Output Verification ==="
+          ls -lh output_apk/SD_Storage_Manager_J1.apk
+
+      - name: 8. Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: SD-Storage-Manager-Galaxy-J1-APK

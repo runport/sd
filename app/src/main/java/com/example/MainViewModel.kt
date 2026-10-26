@@ -8,7 +8,9 @@ import com.example.model.AppStorageInfo
 import com.example.model.JunkScanResult
 import com.example.model.RamInfo
 import com.example.model.StorageSpaceInfo
+import com.example.util.AppLog
 import com.example.util.StorageManagerUtil
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,13 +18,13 @@ import kotlinx.coroutines.launch
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _internalStorage = MutableStateFlow(StorageManagerUtil.getInternalStorageInfo())
+    private val _internalStorage = MutableStateFlow(StorageSpaceInfo.EMPTY_INTERNAL)
     val internalStorage: StateFlow<StorageSpaceInfo> = _internalStorage.asStateFlow()
 
-    private val _sdCardStorage = MutableStateFlow(StorageManagerUtil.getSdCardStorageInfo(application))
+    private val _sdCardStorage = MutableStateFlow(StorageSpaceInfo.EMPTY_SD)
     val sdCardStorage: StateFlow<StorageSpaceInfo> = _sdCardStorage.asStateFlow()
 
-    private val _ramInfo = MutableStateFlow(StorageManagerUtil.getRamInfo(application))
+    private val _ramInfo = MutableStateFlow(RamInfo.EMPTY)
     val ramInfo: StateFlow<RamInfo> = _ramInfo.asStateFlow()
 
     private val _installedApps = MutableStateFlow<List<AppStorageInfo>>(emptyList())
@@ -44,23 +46,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val cleanedBytes: StateFlow<Long?> = _cleanedBytes.asStateFlow()
 
     init {
+        AppLog.i("MainViewModel", "MainViewModel initialized. Launching initial storage refresh and app scan.")
         refreshStorage()
         loadApps()
     }
 
     fun refreshStorage() {
-        val app = getApplication<Application>()
-        _internalStorage.value = StorageManagerUtil.getInternalStorageInfo()
-        _sdCardStorage.value = StorageManagerUtil.getSdCardStorageInfo(app)
-        _ramInfo.value = StorageManagerUtil.getRamInfo(app)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val app = getApplication<Application>()
+                val internal = StorageManagerUtil.getInternalStorageInfo()
+                val sd = StorageManagerUtil.getSdCardStorageInfo(app)
+                val ram = StorageManagerUtil.getRamInfo(app)
+
+                _internalStorage.value = internal
+                _sdCardStorage.value = sd
+                _ramInfo.value = ram
+                AppLog.d("MainViewModel", "Storage refresh complete")
+            } catch (t: Throwable) {
+                AppLog.e("MainViewModel", "Exception during refreshStorage", t)
+            }
+        }
     }
 
     fun loadApps() {
         viewModelScope.launch {
             _isLoadingApps.value = true
-            val apps = StorageManagerUtil.getInstalledApps(getApplication())
-            _installedApps.value = apps
-            _isLoadingApps.value = false
+            try {
+                val apps = StorageManagerUtil.getInstalledApps(getApplication())
+                _installedApps.value = apps
+                AppLog.i("MainViewModel", "loadApps completed with ${apps.size} apps")
+            } catch (t: Throwable) {
+                AppLog.e("MainViewModel", "Failed to load apps", t)
+            } finally {
+                _isLoadingApps.value = false
+            }
         }
     }
 
@@ -68,25 +88,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isScanningJunk.value = true
             _cleanedBytes.value = null
-            val result = StorageManagerUtil.scanJunkAndFiles(getApplication())
-            _junkResult.value = result
-            _isScanningJunk.value = false
+            try {
+                val result = StorageManagerUtil.scanJunkAndFiles(getApplication())
+                _junkResult.value = result
+                AppLog.i("MainViewModel", "scanJunk completed: cleanable=${result.totalCleanableBytes} bytes")
+            } catch (t: Throwable) {
+                AppLog.e("MainViewModel", "Failed to scan junk", t)
+            } finally {
+                _isScanningJunk.value = false
+            }
         }
     }
 
     fun cleanJunk() {
         viewModelScope.launch {
             _isCleaningJunk.value = true
-            val cleaned = StorageManagerUtil.cleanCacheAndTempFiles(getApplication())
-            _cleanedBytes.value = cleaned
-            _isCleaningJunk.value = false
-            // Refresh storage and scan result
-            refreshStorage()
-            _junkResult.value = _junkResult.value.copy(
-                tempFilesBytes = 0L,
-                cacheBytes = 0L,
-                totalCleanableBytes = 0L
-            )
+            try {
+                val cleaned = StorageManagerUtil.cleanCacheAndTempFiles(getApplication())
+                _cleanedBytes.value = cleaned
+                AppLog.i("MainViewModel", "cleanJunk completed: cleaned $cleaned bytes")
+                refreshStorage()
+                _junkResult.value = _junkResult.value.copy(
+                    tempFilesBytes = 0L,
+                    cacheBytes = 0L,
+                    totalCleanableBytes = 0L
+                )
+            } catch (t: Throwable) {
+                AppLog.e("MainViewModel", "Failed to clean junk", t)
+            } finally {
+                _isCleaningJunk.value = false
+            }
         }
     }
 

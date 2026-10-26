@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import com.example.ui.theme.MyApplicationTheme
+import com.example.util.AppLog
 
 class MainActivity : ComponentActivity() {
 
@@ -18,29 +19,50 @@ class MainActivity : ComponentActivity() {
 
     private val requestPermissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) {
-        // Automatically refresh or scan after permission grant
+    ) { results ->
+        AppLog.i("MainActivity", "Permission request results: $results")
         viewModel.refreshStorage()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        AppLog.i("MainActivity", "onCreate started. Device: ${Build.MANUFACTURER} ${Build.MODEL}, Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
 
-        // Request storage / notification permissions on Android 6+ if needed
-        checkAndRequestPermissions()
+        // Guard enableEdgeToEdge for legacy TouchWiz Android 5.1.1
+        try {
+            enableEdgeToEdge()
+            AppLog.i("MainActivity", "enableEdgeToEdge completed")
+        } catch (t: Throwable) {
+            AppLog.w("MainActivity", "enableEdgeToEdge not fully supported on this platform, skipping", t)
+        }
 
-        setContent {
-            MyApplicationTheme {
-                MainScreen(viewModel = viewModel)
+        try {
+            checkAndRequestPermissions()
+        } catch (t: Throwable) {
+            AppLog.w("MainActivity", "Error in checkAndRequestPermissions", t)
+        }
+
+        try {
+            setContent {
+                MyApplicationTheme {
+                    MainScreen(viewModel = viewModel)
+                }
             }
+            AppLog.i("MainActivity", "setContent initialized successfully")
+        } catch (t: Throwable) {
+            AppLog.e("MainActivity", "Fatal error during setContent", t)
+            throw t
         }
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh when coming back from system settings (e.g. after moving an app)
-        viewModel.refreshStorage()
+        AppLog.d("MainActivity", "onResume: refreshing storage counters")
+        try {
+            viewModel.refreshStorage()
+        } catch (t: Throwable) {
+            AppLog.w("MainActivity", "Error in onResume refreshStorage", t)
+        }
     }
 
     private fun checkAndRequestPermissions() {
@@ -63,6 +85,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if (permissionsToRequest.isNotEmpty()) {
+            AppLog.i("MainActivity", "Requesting runtime permissions: $permissionsToRequest")
             requestPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
         }
     }
