@@ -1,0 +1,57 @@
+<resources>
+    <string name="app_name">مدیر حافظه و SD</string>
+
+    <!-- Navigation & Tabs -->
+    <string name="tab_dashboard">داشبورد حافظه</string>
+    <string name="tab_apps">انتقال برنامه‌ها</string>
+    <string name="tab_cleaner">پاکسازی سریع</string>
+    <string name="tab_guide">راهنمای J1</string>
+    <string name="tab_tips">هشدارها و نکات</string>
+
+    <!-- Dashboard -->
+    <string name="internal_storage">حافظه داخلی دستگاه</string>
+    <string name="sd_card_storage">کارت حافظه جانبی (MicroSD)</string>
+    <string name="sd_card_not_detected">کارت حافظه SD شناسایی نشد یا وارد نشده است</string>
+    <string name="storage_total">کل فضای ذخیره:</string>
+    <string name="storage_used">استفاده شده:</string>
+    <string name="storage_free">فضای خالی و در دسترس:</string>
+    <string name="btn_refresh">بروزرسانی وضعیت</string>
+    <string name="btn_open_storage_settings">تنظیمات حافظه سیستم</string>
+    <string name="ram_status">وضعیت حافظه موقت (RAM):</string>
+
+    <!-- Apps Tab -->
+    <string name="filter_all">همه برنامه‌ها</string>
+    <string name="filter_movable">قابل انتقال به SD</string>
+    <string name="filter_on_sd">نصب‌شده روی SD</string>
+    <string name="filter_user_only">برنامه‌های کاربر</string>
+    <string name="search_apps">جستجوی برنامه…</string>
+    <string name="btn_move_to_sd">انتقال به SD</string>
+    <string name="btn_app_settings">مدیریت برنامه</string>
+    <string name="app_on_internal">محل فعلی: حافظه داخلی</string>
+    <string name="app_on_sd">محل فعلی: کارت SD</string>
+    <string name="app_status_movable">امکان جابجایی دارد ✓</string>
+    <string name="app_status_system">برنامه سیستمی (غیرقابل جابجایی)</string>
+    <string name="loading_apps">در حال بررسی و بارگذاری برنامه‌ها…</string>
+    <string name="no_apps_found">برنامه‌ای با این فیلتر یافت نشد</string>
+
+    <!-- Cleaner Tab -->
+    <string name="cleaner_title">پاکسازی سریع و هوشمند</string>
+    <string name="cleaner_desc">حذف فایل‌های موقت، لاگ‌ها، کش‌ها و کشف فایل‌های حجیم</string>
+    <string name="btn_scan">اسکن حافظه</string>
+    <string name="btn_clean_now">پاکسازی فوری فایل‌های موقت</string>
+    <string name="btn_open_apps_cache">رفتن به مدیریت برای پاک کردن کش</string>
+    <string name="junk_found">فایل‌های موقت شناسایی‌شده:</string>
+    <string name="large_files_title">فایل‌های حجیم بالای ۲۰ مگابایت</string>
+    <string name="no_junk_found">حافظه از فایل‌های موقت پاک است</string>
+    <string name="cleaning_done">پاکسازی با موفقیت انجام شد!</string>
+
+    <!-- Guide Tab -->
+    <string name="guide_title">راهنمای تخصصی سامسونگ Galaxy J1</string>
+    <string name="guide_subtitle">ویژه اندروید ۵.۰ (لالی‌پاپ) و گوشی‌های با حافظه اندک</string>
+
+    <!-- Notification / Reminder -->
+    <string name="daily_reminder_title">یادآوری بررسی روزانه حافظه</string>
+    <string name="daily_reminder_desc">نمایش هشدار ملایم جهت جلوگیری از پر شدن حافظه داخلی Galaxy J1</string>
+    <string name="reminder_notif_title">هشدار پر شدن حافظه گوشی</string>
+    <string name="reminder_notif_text">برای جلوگیری از هنگ کردن Galaxy J1، فایل‌های اضافی را به کارت SD منتقل یا پاک کنید.</string>
+</resources>

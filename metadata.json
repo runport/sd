@@ -1,0 +1,8 @@
+{
+  "name": "مدیر حافظه و SD",
+  "description": "ابزار تخصصی و سبک مدیریت حافظه داخلی و کارت SD با قابلیت انتقال برنامه‌ها، پاکسازی هوشمند و راهنمای گلکسی J1",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
