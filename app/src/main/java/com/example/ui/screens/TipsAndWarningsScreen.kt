@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.SdCardAlert
@@ -166,7 +166,7 @@ fun TipsAndWarningsScreen(
         // Warning 1: Why some apps cannot be moved
         item {
             WarningCard(
-                icon = Icons.Default.HelpOutline,
+                icon = Icons.AutoMirrored.Filled.HelpOutline,
                 iconBg = MaterialTheme.colorScheme.primaryContainer,
                 iconTint = MaterialTheme.colorScheme.primary,
                 title = "۱. چرا همه برنامه‌ها به کارت SD منتقل نمی‌شوند؟",

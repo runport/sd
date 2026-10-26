@@ -27,17 +27,35 @@ jobs:
 
       - name: 4. Prepare Environment & Keystore
         run: |
-          # اطمینان از وجود فایل .env برای پلاگین Secrets
+          # ۱. اطمینان از وجود فایل .env برای پلاگین Secrets
           if [ ! -f .env ]; then
             cp .env.example .env || touch .env
           fi
 
-          # دیکود کردن فایل کلید debug در صورت وجود
+          # ۲. بازگردانی کلید دیباگ از base64 در صورت وجود فایل
           if [ -f debug.keystore.base64 ] && [ ! -f debug.keystore ]; then
-            base64 -d debug.keystore.base64 > debug.keystore
+            base64 -d debug.keystore.base64 > debug.keystore || true
           fi
 
-          # دسترسی اجرایی به gradlew
+          # ۳. در صورتی که فایل کلید در گیت وجود نداشت، کلید استاندارد دیباگ با keytool ساخته می‌شود
+          if [ ! -s debug.keystore ]; then
+            echo "debug.keystore not found. Generating a valid debug keystore with keytool..."
+            keytool -genkeypair \
+              -alias androiddebugkey \
+              -keypass android \
+              -keystore debug.keystore \
+              -storepass android \
+              -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000
+          fi
+
+          # بررسی وضعیت نهایی فایل کلید
+          echo "debug.keystore verification:"
+          ls -lh debug.keystore
+
+          # ۴. دسترسی اجرایی به اسکریپت gradlew
           chmod +x gradlew
 
       - name: 5. Build Debug APK
@@ -46,8 +64,12 @@ jobs:
       - name: 6. Find & Rename APK for Easy Download
         run: |
           mkdir -p output_apk
-          find app/build/outputs/apk/ -name "*.apk" -exec cp {} output_apk/SD_Storage_Manager_J1.apk \;
-          echo "APK successfully generated and copied to output_apk directory."
+          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk output_apk/SD_Storage_Manager_J1.apk
+          else
+            find app/build/outputs/apk/ -name "*.apk" -exec cp {} output_apk/SD_Storage_Manager_J1.apk \;
+          fi
+          echo "APK successfully generated and copied to output_apk directory:"
           ls -lh output_apk/
 
       - name: 7. Upload APK as Artifact

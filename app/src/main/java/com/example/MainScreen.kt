@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -186,7 +186,7 @@ fun MainScreen(
                         onClick = { currentTab = MainTab.GUIDE },
                         icon = {
                             Icon(
-                                Icons.Default.MenuBook,
+                                Icons.AutoMirrored.Filled.MenuBook,
                                 contentDescription = "راهنما",
                                 modifier = Modifier.size(24.dp)
                             )
@@ -204,7 +204,7 @@ fun MainScreen(
                         onClick = { currentTab = MainTab.TIPS },
                         icon = {
                             Icon(
-                                Icons.Default.HelpOutline,
+                                Icons.AutoMirrored.Filled.HelpOutline,
                                 contentDescription = "هشدارها",
                                 modifier = Modifier.size(24.dp)
                             )

@@ -1,0 +1,41 @@
+﻿2026-10-26T10:21:43.5375512Z Post job cleanup.
+2026-10-26T10:21:43.8444250Z In post-action step
+2026-10-26T10:21:43.8465083Z ##[group]Stopping Gradle daemons
+2026-10-26T10:21:43.8477799Z Stopping Gradle daemons for /home/runner/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1
+2026-10-26T10:21:43.8503434Z [command]/home/runner/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1/bin/gradle --stop
+2026-10-26T10:21:44.9261728Z Stopping Daemon(s)
+2026-10-26T10:21:44.9520877Z 1 Daemon stopped
+2026-10-26T10:21:44.9813955Z ##[endgroup]
+2026-10-26T10:21:44.9833163Z Not performing cache-cleanup due to build failure
+2026-10-26T10:21:44.9834090Z ##[group]Caching Gradle state
+2026-10-26T10:21:45.0236623Z Not saving configuration-cache state, as no encryption key was provided
+2026-10-26T10:21:45.0763627Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/sd/sd --files-from manifest.txt --use-compress-program zstdmt
+2026-10-26T10:21:45.0784066Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/sd/sd --files-from manifest.txt --use-compress-program zstdmt
+2026-10-26T10:21:46.5651829Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/sd/sd --files-from manifest.txt --use-compress-program zstdmt
+2026-10-26T10:21:46.7376058Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/sd/sd --files-from manifest.txt --use-compress-program zstdmt
+2026-10-26T10:21:46.7567035Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/sd/sd --files-from manifest.txt --use-compress-program zstdmt
+2026-10-26T10:21:46.9544190Z Sent 61124 of 61124 (100.0%), 0.3 MBs/sec
+2026-10-26T10:21:47.0882068Z Saved cache entry with key gradle-instrumented-jars-v1-da27189608cc64b8ccdc1e8234084779 from /home/runner/.gradle/caches/jars-*/*/ in 777ms
+2026-10-26T10:21:47.1000502Z Sent 91457 of 91457 (100.0%), 0.7 MBs/sec
+2026-10-26T10:21:47.1231784Z Sent 86656 of 86656 (100.0%), 0.5 MBs/sec
+2026-10-26T10:21:47.2584088Z Saved cache entry with key gradle-groovy-dsl-v1-28b9a41f693ba754e53f6f5a3dfc445c from /home/runner/.gradle/caches/*/groovy-dsl/*/ in 780ms
+2026-10-26T10:21:47.2782066Z Saved cache entry with key gradle-kotlin-dsl-v1-4e303ba5687e92b9ac53470b12ae4213 from /home/runner/.gradle/caches/*/kotlin-dsl/accessors/*/,/home/runner/.gradle/caches/*/kotlin-dsl/scripts/*/ in 897ms
+2026-10-26T10:21:47.8426260Z Sent 2162114 of 136379842 (1.6%), 2.1 MBs/sec
+2026-10-26T10:21:47.8711116Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/sd/sd --files-from manifest.txt --use-compress-program zstdmt
+2026-10-26T10:21:47.9762962Z Sent 41993401 of 41993401 (100.0%), 40.0 MBs/sec
+2026-10-26T10:21:48.5785197Z Sent 136379842 of 136379842 (100.0%), 76.4 MBs/sec
+2026-10-26T10:21:48.8460142Z Saved cache entry with key gradle-wrapper-zips-v1-8c0de4c6bda6041d6e054bf825a89c98 from /home/runner/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks in 3723ms
+2026-10-26T10:21:49.0834671Z Saved cache entry with key gradle-generated-gradle-jars-v1-cb4b032a7d08b9bf1e84e9eacaebcc29 from /home/runner/.gradle/caches/9.3.1/generated-gradle-jars/gradle-api-9.3.1.jar in 3980ms
+2026-10-26T10:21:49.4857708Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/sd/sd --files-from manifest.txt --use-compress-program zstdmt
+2026-10-26T10:21:50.7483470Z Sent 0 of 321571432 (0.0%), 0.0 MBs/sec
+2026-10-26T10:21:51.7083633Z Sent 321571432 of 321571432 (100.0%), 156.4 MBs/sec
+2026-10-26T10:21:51.9226836Z Saved cache entry with key gradle-dependencies-v1-a81989a777c64bfc6dd161d1d425aadf from /home/runner/.gradle/caches/modules-*/files-*/*/*/*/* in 5675ms
+2026-10-26T10:21:53.7316806Z Sent 39977618 of 174195346 (22.9%), 38.1 MBs/sec
+2026-10-26T10:21:54.2187967Z Sent 174195346 of 174195346 (100.0%), 111.6 MBs/sec
+2026-10-26T10:21:54.3669151Z Saved cache entry with key gradle-transforms-v1-527d2b0d8fce81da915e5776833a7f10 from /home/runner/.gradle/caches/transforms-4/*/,/home/runner/.gradle/caches/*/transforms/*/ in 6438ms
+2026-10-26T10:21:54.9875203Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/sd/sd --files-from manifest.txt --use-compress-program zstdmt
+2026-10-26T10:21:55.4183883Z Sent 4072522 of 4072522 (100.0%), 17.1 MBs/sec
+2026-10-26T10:21:55.5615847Z Saved cache entry with key gradle-home-v1|Linux-X64|build[e080f0fdc288b6f0c5023fd4b86f7a10]-5cec211be4d5b8082e118c92338c801ba2ca6501 from /home/runner/.gradle/caches,/home/runner/.gradle/notifications,/home/runner/.gradle/.setup-gradle in 589ms
+2026-10-26T10:21:55.5618044Z ##[endgroup]
+2026-10-26T10:21:55.5618666Z Generating Job Summary
+2026-10-26T10:21:55.5633198Z Completed post-action step
